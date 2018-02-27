@@ -8,29 +8,29 @@ const { loadConfig } = require('./config');
 // INIT PROXIES - NEED TO LOAD PROXIES
 var proxies = [];
 var reader = require('readline').createInterface({
-  input: fs.createReadStream('proxies.txt'),
+    input: fs.createReadStream('proxies.txt'),
 });
 
 reader.on('line', line => {
-  proxies.push(formatProxy(line));
+    proxies.push(formatProxy(line));
 });
 
 function formatProxy(str) {
-  // TODO: format is ip:port:user:pass
-  let data = str.split(':');
+    // TODO: format is ip:port:user:pass
+    let data = str.split(':');
 
-  if (data.length === 2) {
-    return 'http://' + data[0] + ':' + data[1];
-  } else if (data.length === 4) {
-    return 'http://' + data[2] + ':' + data[3] + '@' + data[0] + ':' + data[1];
-  } else {
-    console.log('Unable to parse proxy');
-    return null;
-  }
+    if (data.length === 2) {
+        return 'http://' + data[0] + ':' + data[1];
+    } else if (data.length === 4) {
+        return 'http://' + data[2] + ':' + data[3] + '@' + data[0] + ':' + data[1];
+    } else {
+        console.log('Unable to parse proxy');
+        return null;
+    }
 }
 
 function startMenu(slackBot, config) {
-  var customHeader = `
+    var customHeader = `
                         888            d8b                        888          888      d8b
                         888            Y8P                        888          888      Y8P
                         888                                       888          888
@@ -43,90 +43,100 @@ function startMenu(slackBot, config) {
                                                   github.com/dzt/trimalchio
 
   `;
-  menu
-    .addItem('Basic Mode', function() {
-      log(`Looking for Keyword(s) matching "${config.keywords}"`);
-      startBasicMode(slackBot, config);
-      menu.resetMenu();
-    })
-    .addItem('Early Link Mode', function() {
-      log(
-        'Feature not yet available at the moment. Sorry for the inconvenience.',
-        'error'
-      );
-      process.exit(1);
-    })
-    .addItem('Restock Mode', function() {
-      log(
-        'Feature not yet available at the moment. Sorry for the inconvenience.',
-        'error'
-      );
-      process.exit(1);
-    })
-    .addItem('Captcha Harvester', function() {
-      log(
-        'Feature not yet available at the moment. Sorry for the inconvenience.',
-        'error'
-      );
-      process.exit(1);
-    })
-    .addItem('Scheduler', function() {
-      log(
-        'Feature not yet available at the moment. Sorry for the inconvenience.',
-        'error'
-      );
-      process.exit(1);
-    })
-    .addItem('Proxies', function() {
-      log(
-        'Feature not yet available at the moment. Sorry for the inconvenience.',
-        'error'
-      );
-      process.exit(1);
-    })
-    .customHeader(function() {
-      console.log('\x1b[36m%s\x1b[0m', customHeader);
-    })
-    .disableDefaultPrompt()
-    .start();
+    menu
+        .addItem('Basic Mode', function() {
+            log(`Looking for Keyword(s) matching "${config.keywords}"`);
+            startBasicMode(slackBot, config);
+            menu.resetMenu();
+        })
+        .addItem('Early Link Mode', function() {
+            log(
+                'Feature not yet available at the moment. Sorry for the inconvenience.',
+                'error'
+            );
+            process.exit(1);
+        })
+        .addItem('Restock Mode', function() {
+            log(
+                'Feature not yet available at the moment. Sorry for the inconvenience.',
+                'error'
+            );
+            process.exit(1);
+        })
+        .addItem('Captcha Harvester', function() {
+            log(
+                'Feature not yet available at the moment. Sorry for the inconvenience.',
+                'error'
+            );
+            process.exit(1);
+        })
+        .addItem('Scheduler', function() {
+            log(
+                'Feature not yet available at the moment. Sorry for the inconvenience.',
+                'error'
+            );
+            process.exit(1);
+        })
+        .addItem('Proxies', function() {
+            log(
+                'Feature not yet available at the moment. Sorry for the inconvenience.',
+                'error'
+            );
+            process.exit(1);
+        })
+        .customHeader(function() {
+            console.log('\x1b[36m%s\x1b[0m', customHeader);
+        })
+        .disableDefaultPrompt()
+        .start();
 
-  require('console-stamp')(console, {
-    colors: {
-      stamp: 'yellow',
-      label: 'cyan',
-      metadata: 'green',
-    },
-  });
+    require('console-stamp')(console, {
+        colors: {
+            stamp: 'yellow',
+            label: 'cyan',
+            metadata: 'green',
+        },
+    });
 }
 
 var index = 0;
 
 const { pay } = require('./trimalchio/pay');
 const { findItem, selectStyle } = require('./trimalchio/findItem');
+const { getProduct } = require('./product');
 
 function startBasicMode(slackBot, config) {
-  if (index >= proxies.length) {
-    index = 0;
-  }
-
-  findItem(config, slackBot, proxies[index], function(err, res) {
-    if (err) {
-      setTimeout(() => {
-        return startBasicMode();
-      }, 10000); // delay
-    } else {
-      selectStyle(config, slackBot, res, (match, styleID) => {
-        pay(config, slackBot, match, styleID);
-      });
+    if (index >= proxies.length) {
+        index = 0;
     }
-  });
+
+    /*
+    findItem(config, slackBot, proxies[index], function(err, res) {
+      if (err) {
+        setTimeout(() => {
+          return startBasicMode();
+        }, 10000); // delay
+      } else {
+        selectStyle(config, slackBot, res, (match, styleID) => {
+          pay(config, slackBot, match, styleID);
+        });
+      }
+    });
+    */
+
+    getProduct(config.base_url, config.keywords[0], function (cartLink) {
+        console.log(cartLink);
+        pay(config, slackBot, "lol", cartLink);
+    });
 }
 
+
+
 function init() {
-  loadConfig(config => {
-    const slackBot = setupSlackBot(config);
-    startMenu(slackBot, config);
-  });
+    loadConfig(config => {
+        const slackBot = "";
+        startBasicMode(slackBot, config);
+});
 }
 
 init();

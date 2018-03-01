@@ -5,6 +5,7 @@ const log = require('./utils/log');
 const { setupSlackBot } = require('./utils/slack');
 const { loadConfig } = require('./config');
 
+/*
 // INIT PROXIES - NEED TO LOAD PROXIES
 var proxies = [];
 var reader = require('readline').createInterface({
@@ -14,6 +15,7 @@ var reader = require('readline').createInterface({
 reader.on('line', line => {
     proxies.push(formatProxy(line));
 });
+
 
 function formatProxy(str) {
     // TODO: format is ip:port:user:pass
@@ -28,7 +30,7 @@ function formatProxy(str) {
         return null;
     }
 }
-
+*/
 function startMenu(slackBot, config) {
     var customHeader = `
                         888            d8b                        888          888      d8b
@@ -90,13 +92,6 @@ function startMenu(slackBot, config) {
         .disableDefaultPrompt()
         .start();
 
-    require('console-stamp')(console, {
-        colors: {
-            stamp: 'yellow',
-            label: 'cyan',
-            metadata: 'green',
-        },
-    });
 }
 
 var index = 0;
@@ -106,11 +101,12 @@ const { findItem, selectStyle } = require('./trimalchio/findItem');
 const { getProduct } = require('./product');
 
 function startBasicMode(slackBot, config) {
+    /*
     if (index >= proxies.length) {
         index = 0;
     }
 
-    /*
+
     findItem(config, slackBot, proxies[index], function(err, res) {
       if (err) {
         setTimeout(() => {
@@ -135,7 +131,15 @@ function startBasicMode(slackBot, config) {
 function init() {
     loadConfig(config => {
         const slackBot = "";
-        startBasicMode(slackBot, config);
+    require('console-stamp')(console, {
+        colors: {
+            stamp: 'yellow',
+            label: 'cyan',
+            metadata: 'green',
+        },
+    });
+    startBasicMode(slackBot, config);
+
 });
 }
 

@@ -27,7 +27,7 @@ function pay(config, slackBot, _match, cartLink) {
         {
             url: cartLink,
             followAllRedirects: true,
-            method: 'post',
+            method: 'get',
             headers: {
                 'User-Agent': userAgent,
             },
@@ -50,29 +50,70 @@ function pay(config, slackBot, _match, cartLink) {
                 process.exit(1);
             }
 
-            const $ = cheerio.load(body);
-            url = res.request.href;
-            log(url);
-            checkoutID = url.split('checkouts/')[1];
-            storeID = url.split('/')[3];
-            const auth_token = "yellobello";
-            /*
-            const auth_token = $(
-                'form.edit_checkout input[name=authenticity_token]'
-            ).attr('value');
-            */
-            log(`Store ID: ${storeID}`);
-            log(`Checkout ID: ${checkoutID}`);
-            price = $('#checkout_total_price').text();
-            slackNotification(config, slackBot, '#36a64f', 'Added to Cart');
-            //opn(url);
+            // simulate queue
+            if (res.statusCode === parseInt('303'))  {
+                log('Waiting in queue...');
+                const queuePollUrl = res.getHeader('Location');
+                log('Queue Poll Url: ' + queuePollUrl);
+                function pollUrl(queuePollUrl) {
+                    request({
+                            url: queuePollUrl,
+                        },
+                        function (err, res, body) {
+                            console.log(body);
+                            if (req.statusCode === parseInt('202')) {
+                                setTimeout(pollUrl(queuePollUrl), 1000);
+                            } else {
+                                log('Passed Queue');
+                                request(
+                                    {
+                                        url: cartLink,
+                                        followAllRedirects: true,
+                                        method: 'post',
+                                        headers: {
+                                            'User-Agent': userAgent,
+                                        },
+                                    }, function(err, res, body) {
+                                        log('Added to cart!');
+                                        log('Checking out your item...');
+                                        checkoutHost = 'https://' + res.request.originalHost;
+                                        if (res.request.href.indexOf('stock_problems') > -1) {
+                                            log(
+                                                `This item is currently Sold Out, sorry for the inconvenience`
+                                            );
+                                            process.exit(1);
+                                        }
+                                        cb(body);
+                                    });
 
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout
-            });
+                            }
+                        });
+                };
+                pollUrl(queuePollUrl);
+            } else cb(body);
 
-            rl.question('Enter captcha token: ', answer => input(config, slackBot, auth_token, answer, res.request.originalHost));
+            function cb(body) {
+                const $ = cheerio.load(body);
+                url = res.request.href;
+                log(url);
+                checkoutID = url.split('checkouts/')[1];
+                storeID = url.split('/')[3];
+                const auth_token = "placeholder";
+                log(`Store ID: ${storeID}`);
+                log(`Checkout ID: ${checkoutID}`);
+                price = $('#checkout_total_price').text();
+                //slackNotification(config, slackBot, '#36a64f', 'Added to Cart');
+                //opn(url);
+
+                const rl = readline.createInterface({
+                    input: process.stdin,
+                    output: process.stdout
+                });
+
+                rl.question('Enter captcha token: ', answer => input(config, slackBot, auth_token, answer, res.request.originalHost)
+            )
+                ;
+            }
 
         }
     );
@@ -165,7 +206,7 @@ function input(config, slackBot, auth_token, answer, host) {
             return submitShipping(config, slackBot, {
                 type: 'direct',
                 value: firstShippingOption,
-                auth_token: 'yellowbellow'
+                auth_token: 'placeholder'
                 //auth_token: $('input[name="authenticity_token"]').val(),
             });
         }
@@ -194,7 +235,7 @@ function submitShipping(config, slackBot, res) {
                     const shipping_method_value = $('.radio-wrapper').attr(
                         'data-shipping-method'
                     );
-                    const auth_token = 'yellowbellow';
+                    const auth_token = 'placeholder';
                     /*
                     const auth_token = $(
                         'form[data-shipping-method-form="true"] input[name="authenticity_token"]'
@@ -236,7 +277,7 @@ function submitShipping(config, slackBot, res) {
                                 'form[data-payment-form=""] input[name="authenticity_token"]'
                             ).attr('value');
                             */
-                            const new_auth_token = "yellowbellow";
+                            const new_auth_token = "placeholder";
                             // log(`Final Auth Token: ${new_auth_token}`);
                             // log(`Price: ${price}`);
                             // log(`Payment Gateway ID: ${payment_gateway}`);
@@ -254,7 +295,6 @@ function submitShipping(config, slackBot, res) {
             );
         }, parseInt(config.shipping_pole_timeout));
     } else if (res.type == 'direct') {
-        log(`hey`);
         log(`Shipping Method Value: ${res.value}`);
         log('Card information sending...');
 
@@ -340,7 +380,7 @@ function submitCC(config, slackBot, new_auth_token, price, payment_gateway) {
             },
         },
         function(err, res, body) {
-            //console.log(body);
+            console.log(body);
             if (process.env.DEBUG) {
                 fs.writeFile('debug.html', body, function(err) {
                     if (err) {

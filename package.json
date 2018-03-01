@@ -19,6 +19,7 @@
     "node-menu": "^1.3.0",
     "node-phone-formatter": "0.0.4",
     "open": "0.0.5",
+    "opn": "^5.2.0",
     "phone-formatter": "0.0.2",
     "prompt": "^1.0.0",
     "request": "^2.81.0",

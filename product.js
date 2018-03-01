@@ -1,6 +1,6 @@
 var request = require('request');
 var parseString = require('xml2js').parseString;
-//var opn = require('opn');
+var opn = require('opn');
 
 function getProductLink(siteLink, keyword, cb) {
     console.log(siteLink + '/sitemap_products_1.xml');
@@ -45,8 +45,14 @@ function getCartLink(prodLink, siteLink, cb) {
                 for (var i = 0; i < arr.length; i++) {
                     var curSize = arr[i].title[0];
                     // TODO: include size param for clothes as well
-                    if (curSize.includes('10')) {
+                    if (curSize.includes('9')) {
                         console.log(arr[i]["id"][0]._);
+                        opn(siteLink + '/cart/' + arr[i]["id"][0]._ + ":1");
+                        cb(siteLink + '/cart/' + arr[i]["id"][0]._ + ":1");
+                        break;
+                    } else if (i + 1 === arr.length) {
+                        console.log('Adding the largest size found');
+                        opn(siteLink + '/cart/' + arr[i]["id"][0]._ + ":1");
                         cb(siteLink + '/cart/' + arr[i]["id"][0]._ + ":1");
                     }
                 }

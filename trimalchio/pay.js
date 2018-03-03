@@ -51,26 +51,41 @@ function pay(config, slackBot, _match, cartLink) {
             }
 
             // simulate queue
-            if (res.statusCode === parseInt('303'))  {
-                log('Waiting in queue...');
-                const queuePollUrl = res.getHeader('Location');
+            if (res.request.href.indexOf('throttle') > -1)  {
+                var queueLink = res.request.href;
+                ///console.log(res);
+                //console.log(body);
+                //console.log()
+                const queuePollUrl = 'https://' + res.request.originalHost + '/checkout/poll?js_poll=1';
                 log('Queue Poll Url: ' + queuePollUrl);
                 function pollUrl(queuePollUrl) {
                     request({
                             url: queuePollUrl,
+                            method: 'get',
+                            headers: {
+                                Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                                Host:  res.request.originalHost,
+                                Referer: res.request.href,
+                                'User-Agent': userAgent,
+                            },
                         },
                         function (err, res, body) {
-                            console.log(body);
-                            if (req.statusCode === parseInt('202')) {
-                                setTimeout(pollUrl(queuePollUrl), 1000);
+                            if (res.statusCode === parseInt('202')) {
+                                console.log('Waiting in queue...');
+                                setTimeout( () => pollUrl(queuePollUrl), 2000);
                             } else {
+                                console.log(res.statusCode);
+                                console.log(queueLink);
                                 log('Passed Queue');
                                 request(
                                     {
                                         url: cartLink,
                                         followAllRedirects: true,
-                                        method: 'post',
+                                        method: 'get',
                                         headers: {
+                                            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                                            Host:  res.request.originalHost,
+                                            Referer: queueLink,
                                             'User-Agent': userAgent,
                                         },
                                     }, function(err, res, body) {
@@ -83,16 +98,38 @@ function pay(config, slackBot, _match, cartLink) {
                                             );
                                             process.exit(1);
                                         }
-                                        cb(body);
+                                        const $ = cheerio.load(body);
+                                        url = res.request.href;
+                                        if (res.request.href.indexOf('stock_problems') > -1) {
+                                            log(
+                                                `This item is currently Sold Out, sorry for the inconvenience`
+                                            );
+                                            process.exit(1);
+                                        }
+                                        log(url);
+                                        checkoutID = url.split('checkouts/')[1];
+                                        storeID = url.split('/')[3];
+                                        const auth_token = "placeholder";
+                                        log(`Store ID: ${storeID}`);
+                                        log(`Checkout ID: ${checkoutID}`);
+                                        price = $('#checkout_total_price').text();
+                                        //slackNotification(config, slackBot, '#36a64f', 'Added to Cart');
+                                        //opn(url);
+
+                                        const rl = readline.createInterface({
+                                            input: process.stdin,
+                                            output: process.stdout
+                                        });
+
+                                        rl.question('Enter captcha token: ', answer => input(config, slackBot, auth_token, answer, res.request.originalHost));
                                     });
 
                             }
                         });
                 };
                 pollUrl(queuePollUrl);
-            } else cb(body);
+            } else {
 
-            function cb(body) {
                 const $ = cheerio.load(body);
                 url = res.request.href;
                 log(url);
@@ -110,9 +147,8 @@ function pay(config, slackBot, _match, cartLink) {
                     output: process.stdout
                 });
 
-                rl.question('Enter captcha token: ', answer => input(config, slackBot, auth_token, answer, res.request.originalHost)
-            )
-                ;
+                rl.question('Enter captcha token: ', answer => input(config, slackBot, auth_token, answer, res.request.originalHost));
+
             }
 
         }
